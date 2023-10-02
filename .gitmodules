@@ -1,0 +1,4 @@
+[submodule "extern/custom-runtime"]
+	path = extern/custom-runtime
+	url = https://github.com/GeroL/custom-runtime.git
+	branch = main-custom
