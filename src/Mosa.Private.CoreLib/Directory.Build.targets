@@ -1,0 +1,18 @@
+<Project>
+  <ItemGroup>
+    <FrameworkReference Update="Microsoft.NETCore.App" RuntimePackLabels="Mosa" />
+    <KnownRuntimePack Remove="Microsoft.NETCore.App" />
+    <KnownRuntimePack Include="Microsoft.NETCore.App"
+                      TargetFramework="net8.0"
+                      RuntimeFrameworkName="Microsoft.NETCore.App"
+                      LatestRuntimeFrameworkVersion="**FromWorkload**"
+                      RuntimePackNamePatterns="Mosa.NETCore.App.Runtime.**RID**"
+                      RuntimePackRuntimeIdentifiers="mosa"
+                      RuntimePackLabels="Mosa"
+                      />
+  </ItemGroup>
+  <PropertyGroup>
+  </PropertyGroup>
+  
+  <Import Project="$(NativeAotPath)Directory.Build.targets" Condition="'$(MSBuildProjectName)' != 'SourceGenerators'" />
+</Project>

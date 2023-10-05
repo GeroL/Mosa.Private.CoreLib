@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
+    <NoWarn>$(NoWarn);AD0001;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="$()" />
+    <Compile Include="AsmOffsets.cs" />
+    <Compile Include="AsmOffsets_.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
+    <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.Unix.xml" />
+  </ItemGroup>
+
+  <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DefineConstants>SYSTEM_PRIVATE_CORELIB;FEATURE_MANAGED_ETW_CHANNELS;FEATURE_MANAGED_ETW;$(DefineConstants)</DefineConstants>
+    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <FeatureNativeAot>true</FeatureNativeAot>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+  </PropertyGroup>
+  <PropertyGroup>
+    <FeaturePortableTimer>true</FeaturePortableTimer>
+  </PropertyGroup>
+  <PropertyGroup>
+    <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
+    <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
+  </PropertyGroup>
+
+  <Import Project="..\Mosa.Private.CoreLib.Shared\Mosa.Private.CoreLib.Shared.projitems" Label="Shared" />
+  <Import Project="$(LibrariesProjectRoot)System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
+  
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
