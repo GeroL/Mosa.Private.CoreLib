@@ -1,0 +1,24 @@
+<Project>
+  <!--<Import Project="Sdk.targets" Sdk="Mosa.Os.Sdk" Condition="'$(TargetPlatformIdentifier)' == 'mosa'" />-->
+  
+  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '6.0')) ">
+    <SdkSupportedTargetPlatformIdentifier Include="mosa" DisplayName="Mosa" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--<TargetPlatformIdentifier>x64</TargetPlatformIdentifier>
+    <TargetArchitecture>x64</TargetArchitecture>
+    <Platform>x64</Platform>-->
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <ExternalRuntimeBasePath>..\..\extern\custom-runtime\</ExternalRuntimeBasePath>
+    <RepoRoot>$(MSBuildThisFileDirectory)$(ExternalRuntimeBasePath)</RepoRoot>
+    <NativeAotPath>$(RepoRoot)src\coreclr\nativeaot\</NativeAotPath>
+    <RuntimeBasePath>$(NativeAotPath)Runtime.Base\src\</RuntimeBasePath>
+    <PrivateCoreLibDirectory>$(NativeAotPath)System.Private.CoreLib\src\</PrivateCoreLibDirectory>
+  </PropertyGroup>
+  
+  <Import Project="$(NativeAotPath)Directory.Build.props" Condition="'$(MSBuildProjectName)' != 'SourceGenerators'" />
+
+</Project>

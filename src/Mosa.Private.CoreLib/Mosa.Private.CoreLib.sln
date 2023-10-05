@@ -1,0 +1,79 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34112.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Mosa.Private.CoreLib.Shared", "Mosa.Private.CoreLib.Shared\Mosa.Private.CoreLib.Shared.shproj", "{82786537-6B89-4511-8694-2176A27F08A8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mosa.Private.CoreLib", "Mosa.Private.CoreLib\Mosa.Private.CoreLib.csproj", "{6B04126F-80C2-45D5-93F8-B480D912F806}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F876D3B9-3483-4D01-8C6C-3FACDC7053C7}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		fixSharedProjectReferences.targets = fixSharedProjectReferences.targets
+		nuget.config = nuget.config
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Checked|Any CPU = Checked|Any CPU
+		Checked|arm = Checked|arm
+		Checked|arm64 = Checked|arm64
+		Checked|x64 = Checked|x64
+		Checked|x86 = Checked|x86
+		Debug|Any CPU = Debug|Any CPU
+		Debug|arm = Debug|arm
+		Debug|arm64 = Debug|arm64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|arm = Release|arm
+		Release|arm64 = Release|arm64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|Any CPU.ActiveCfg = Checked|x64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|Any CPU.Build.0 = Checked|x64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|arm.ActiveCfg = Checked|arm
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|arm.Build.0 = Checked|arm
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|arm64.ActiveCfg = Checked|arm64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|arm64.Build.0 = Checked|arm64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|x64.ActiveCfg = Checked|x64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|x64.Build.0 = Checked|x64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|x86.ActiveCfg = Checked|x86
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Checked|x86.Build.0 = Checked|x86
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|arm.ActiveCfg = Debug|arm
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|arm.Build.0 = Debug|arm
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|arm64.ActiveCfg = Debug|arm64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|arm64.Build.0 = Debug|arm64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|x64.ActiveCfg = Checked|x64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|x64.Build.0 = Checked|x64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|x86.ActiveCfg = Debug|x86
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Debug|x86.Build.0 = Debug|x86
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|arm.ActiveCfg = Release|arm
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|arm.Build.0 = Release|arm
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|arm64.ActiveCfg = Release|arm64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|arm64.Build.0 = Release|arm64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|x64.ActiveCfg = Release|x64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|x64.Build.0 = Release|x64
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|x86.ActiveCfg = Release|x86
+		{6B04126F-80C2-45D5-93F8-B480D912F806}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CFBC116B-4018-48E1-AF1C-1EB1736BC4F0}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\..\extern\custom-runtime\src\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems*{6b04126f-80c2-45d5-93f8-b480d912f806}*SharedItemsImports = 5
+		Mosa.Private.CoreLib.Shared\Mosa.Private.CoreLib.Shared.projitems*{6b04126f-80c2-45d5-93f8-b480d912f806}*SharedItemsImports = 5
+		Mosa.Private.CoreLib.Shared\Mosa.Private.CoreLib.Shared.projitems*{82786537-6b89-4511-8694-2176a27f08a8}*SharedItemsImports = 13
+	EndGlobalSection
+EndGlobal
