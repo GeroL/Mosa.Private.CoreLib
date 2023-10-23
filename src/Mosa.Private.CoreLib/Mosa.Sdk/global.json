@@ -1,0 +1,7 @@
+{
+  "msbuild-sdks": {
+    "Microsoft.Build.NoTargets": "2.0.1",
+    "Microsoft.DotNet.Arcade.Sdk": "8.0.100-rc.1.23463.5"
+  }
+  }
+  

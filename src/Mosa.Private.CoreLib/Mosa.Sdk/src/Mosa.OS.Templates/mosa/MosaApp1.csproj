@@ -1,0 +1,6 @@
+<Project Sdk="Mosa.Sdk">
+  <PropertyGroup>
+    <TargetFramework>mosa-x64</TargetFramework>
+    <RootNamespace Condition="'$(name)' != '$(name{-VALUE-FORMS-}safe_namespace)'">MosaApp1</RootNamespace>
+  </PropertyGroup>
+</Project>

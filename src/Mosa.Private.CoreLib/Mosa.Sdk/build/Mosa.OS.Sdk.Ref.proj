@@ -1,0 +1,88 @@
+<!--
+***********************************************************************************************
+Mosa.Ref.proj
+
+This project file is used to create the Mosa.Ref NuGet, which is the
+targeting pack containing reference assemblies and other compile time assets required
+by projects that use the Mosa .NET framework in .NET 5.
+***********************************************************************************************
+-->
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <MosaFXAPILevel>$(MosaFXVersion.Split(".")[0])</MosaFXAPILevel>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Mosa.Ref</PackageId>
+    <Description>
+      Mosa .NET reference assemblies. Please do not reference directly.
+      - MosaFX API Level : $(MosaFXAPILevel)
+      - MosaFX Version : $(MosaFXVersion)
+    </Description>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MosaFXPackageName>Mosa.NET.API$(MosaFXAPILevel)</MosaFXPackageName>
+    <MosaFXNuGetPathVariable>PkgMosa_NET_API$(MosaFXAPILevel)</MosaFXNuGetPathVariable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="$(MosaFXPackageName)" Version="$(MosaFXVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <BeforePack>
+      _GetPackageVersion;
+      _GetTargetingPackItems;
+      _GenerateFrameworkListFile;
+      $(BeforePack);
+    </BeforePack>
+  </PropertyGroup>
+
+  <Target Name="_GetTargetingPackItems"
+      DependsOnTargets="_GetLicense">
+    <PropertyGroup>
+      <FrameworkListFile>$(IntermediateOutputPath)FrameworkList.xml</FrameworkListFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MosaFXNugetPathItem Include="$(MosaFXNuGetPathVariable)" />
+      <_MosaRefPackAssemblies Include="$(%(_MosaFXNugetPathItem.Identity))\ref\netstandard2.0\*.dll" />
+      <FrameworkListFileClass Include="@(_MosaRefPackAssemblies->'%(Filename)%(Extension)')" Profile="Mosa" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_PackageFiles Include="@(_MosaRefPackAssemblies)" PackagePath="ref\net8.0" TargetPath="ref\net8.0" />
+      <_PackageFiles Include="$(_ProjectSourceDirectory)Mosa.Ref/data/*.txt" PackagePath="data" />
+      <_PackageFiles Include="$(_ProjectSourceDirectory)Mosa.Ref/runtime.json" PackagePath=".\" />
+    </ItemGroup>
+
+  </Target>
+
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)"/>
+
+  <!-- https://github.com/dotnet/runtime/blob/0647ec314948904319da5eb15e9931f7c85ed1e2/src/installer/pkg/projects/Directory.Build.targets#L281 -->
+  <Target Name="_GenerateFrameworkListFile" >
+    <!-- Hardcode framework attributes -->
+    <ItemGroup>
+      <FrameworkListRootAttributes Include="Name" Value=".NET 8.0 - Mosa" />
+      <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value=".NETCoreApp" />
+      <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="8.0" />
+      <FrameworkListRootAttributes Include="FrameworkName" Value="Mosa" />
+    </ItemGroup>
+
+    <!-- https://github.com/dotnet/arcade/blob/5824baf1c9a900ee00c167f96201c750bba6a574/src/Microsoft.DotNet.SharedFramework.Sdk/src/CreateFrameworkListFile.cs -->
+    <CreateFrameworkListFile
+        Files="@(_PackageFiles)"
+        FileClassifications="@(FrameworkListFileClass)"
+        TargetFile="$(FrameworkListFile)"
+        TargetFilePrefixes="ref;runtimes"
+        RootAttributes="@(FrameworkListRootAttributes)"
+    />
+    <ItemGroup>
+      <_PackageFiles Include="$(FrameworkListFile)" PackagePath="data" />
+    </ItemGroup>
+  </Target>
+
+</Project>

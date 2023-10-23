@@ -1,0 +1,44 @@
+<!--
+***********************************************************************************************
+Mosa.Sdk.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) Samsung All rights reserved.
+***********************************************************************************************
+-->
+
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)Mosa.Sdk.After.targets</AfterMicrosoftNETSdkTargets>
+	</PropertyGroup>
+
+  <Import Project="Mosa.Sdk.Versions.targets" />
+  <Import Project="Mosa.Sdk.DefaultProperties.targets" />
+
+  <ItemGroup Condition=" '$(DisableImplicitFrameworkReferences)' != 'true' And '$(DisableImplicitMosaReferences)' != 'true' ">
+    <FrameworkReference
+        Include="Mosa"
+        IsImplicitlyDefined="true"
+        Pack="false"
+        PrivateAssets="All"
+    />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Update="Microsoft.NETCore.App" RuntimePackLabels="Mosa" />
+    <KnownRuntimePack Remove="Microsoft.NETCore.App" />
+    <KnownRuntimePack Include="Mosa"
+                      TargetFramework="net8.0"
+                      RuntimeFrameworkName="Mosa"
+                      LatestRuntimeFrameworkVersion="**FromWorkload**"
+                      RuntimePackNamePatterns="Mosa.Runtime.**RID**"
+                      RuntimePackRuntimeIdentifiers="mosa;mosa-arm;mosa-x86;mosa-x64"
+                      RuntimePackLabels="Mosa"
+                      />
+  </ItemGroup>
+
+</Project>

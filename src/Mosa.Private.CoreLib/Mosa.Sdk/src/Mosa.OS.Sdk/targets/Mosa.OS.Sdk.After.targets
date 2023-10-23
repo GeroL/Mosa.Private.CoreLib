@@ -1,0 +1,25 @@
+<!--
+***********************************************************************************************
+Mosa.Sdk.After.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) Samsung All rights reserved.
+***********************************************************************************************
+-->
+
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <EnableDefaultMosaItems Condition="'$(EnableDefaultMosaItems)' == ''">$(EnableDefaultItems)</EnableDefaultMosaItems>
+  </PropertyGroup>
+
+  <Import Project="Mosa.Sdk.Common.targets" />
+  <Import Project="Mosa.Sdk.NuGet.targets" Condition=" '$(MSBuildRuntimeType)' == 'Full' and '$(MSBuildVersion)' &lt; '17.0' " />
+  <Import Project="Mosa.Sdk.Packaging.targets" />
+  <Import Project="Mosa.Sdk.Applications.targets" Condition="'$(OutputType)'=='Exe'" />
+  <Import Project="Mosa.Sdk.VisualStudio.targets" />
+
+</Project>

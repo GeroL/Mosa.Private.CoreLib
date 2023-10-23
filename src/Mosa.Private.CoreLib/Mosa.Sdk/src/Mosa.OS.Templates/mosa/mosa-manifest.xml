@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns="http://mosa.org/ns/packages" api-version="7" package="com.companyname.MosaApp1" version="1.0.0">
+  <profile name="common" />
+  <ui-application appid="com.companyname.MosaApp1"
+          exec="MosaApp1.dll"
+          type="dotnet"
+          multiple="false"
+          taskmanage="true"
+          nodisplay="false"
+          launch_mode="single">
+    <label>MosaApp1</label>
+    <icon>MosaApp1.png</icon>
+    <metadata key="http://mosa.org/metadata/prefer_dotnet_aot" value="true" />
+  </ui-application>
+</manifest>

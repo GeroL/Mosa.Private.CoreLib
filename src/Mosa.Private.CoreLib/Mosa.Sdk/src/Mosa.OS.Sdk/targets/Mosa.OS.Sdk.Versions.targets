@@ -1,0 +1,55 @@
+<!--
+***********************************************************************************************
+Mosa.Sdk.Versions.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) Samsung All rights reserved.
+***********************************************************************************************
+-->
+
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <_DefaultTargetPlatformVersion>1.0</_DefaultTargetPlatformVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">$(_DefaultTargetPlatformVersion)</TargetPlatformVersion>
+    <_TargetFramework Condition="$(TargetFramework.EndsWith('mosa'))">$(TargetFramework)$(_DefaultTargetPlatformVersion)</_TargetFramework>
+    <_TargetFramework Condition="!$(TargetFramework.EndsWith('mosa'))">$(TargetFramework)</_TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="mosa" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SupportedAPILevel Include="v1.0" MappedAPIVersion="1.0"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <MosaSdkSupportedTargetPlatformVersion Include="1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SdkSupportedTargetPlatformVersion Include="@(MosaSdkSupportedTargetPlatformVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <KnownFrameworkReference
+      Include="Mosa"
+      TargetFramework="$(_TargetFramework)"
+      TargetingPackName="Mosa.Ref"
+      TargetingPackVersion="**FromWorkload**"
+      Profile="Mosa"
+      RuntimePackNamePatterns="Mosa.Runtime.**RID**"
+      RuntimePackRuntimeIdentifiers="mosa;mosa-arm;mosa-x86;mosa-x64"
+      RuntimePackLabels="Mosa"
+    />
+  </ItemGroup>
+
+</Project>

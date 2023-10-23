@@ -1,0 +1,38 @@
+{
+  "runtimes": {
+    "mosa": {
+      "#import": [
+      ]
+    },
+    "mosa-x86": {
+      "#import": [
+        "mosa"
+      ]
+    },
+    "mosa-x64": {
+      "#import": [
+        "mosa"
+      ]
+    },
+    "mosa-arm64": {
+      "#import": [
+        "mosa"
+      ]
+    },
+    "mosa.1.0.0": {
+      "#import": [
+        "mosa"
+      ]
+    },
+    "mosa.1.0.0-x86": {
+      "#import": [
+        "mosa-x86"
+      ]
+    },
+    "mosa.1.0.0-x64": {
+      "#import": [
+        "mosa-x64"
+      ]
+    }
+  }
+}

@@ -1,0 +1,659 @@
+<!--
+***********************************************************************************************
+Mosa.Sdk.Packaging.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (c) Samsung All rights reserved.
+***********************************************************************************************
+-->
+
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+
+  <UsingTask AssemblyFile="$(_MosaTaskAssemblyName)" TaskName="Mosa.Build.Tasks.Package" />
+  <UsingTask AssemblyFile="$(_MosaTaskAssemblyName)" TaskName="Mosa.Build.Tasks.GetManifestInfo" />
+  <UsingTask AssemblyFile="$(_MosaTaskAssemblyName)" TaskName="Mosa.Build.Tasks.Sign" />
+  <UsingTask AssemblyFile="$(_MosaTaskAssemblyName)" TaskName="Mosa.Build.Tasks.FindPatternInList"/>
+  <UsingTask AssemblyFile="$(_MosaTaskAssemblyName)" TaskName="Mosa.Build.Tasks.MergeManifest" />
+  <UsingTask AssemblyFile="$(_MosaTaskAssemblyName)" TaskName="Mosa.Build.Tasks.GetMosaProject" />
+  <UsingTask AssemblyFile="$(_MosaTaskAssemblyName)" TaskName="Mosa.Build.Tasks.ResourceXmlWriter" />
+  <UsingTask AssemblyFile="$(_MosaTaskAssemblyName)" TaskName="Mosa.Build.Tasks.CheckApiVersion" />
+
+  <PropertyGroup>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+    <MosaCreateTpkOnBuild Condition="'$(MosaCreateTpkOnBuild)' == '' and '$(OutputType)' == 'Exe'">true</MosaCreateTpkOnBuild>
+    <MosaPackageOutputPath>$(OutputPath)tpkroot\</MosaPackageOutputPath>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <MosaTpkUserIncludeFiles>
+      <MosaTpkFileName></MosaTpkFileName>
+      <MosaTpkSubDir></MosaTpkSubDir>
+    </MosaTpkUserIncludeFiles>
+  </ItemDefinitionGroup>
+
+  <PropertyGroup>
+    <TpkKeepMeta>
+      MosaTpkFileName;
+      MosaTpkSubDir;
+      MosaTpkSubPath;
+      MosaTpkIsManifest;
+      MosaTpkIsBaseManifest;
+    </TpkKeepMeta>
+  </PropertyGroup>
+
+  <!--
+  ============================================================
+  MosaPackageDependsOn
+
+  Defines the set of targets that tpk packaging is directly dependent on.
+  ============================================================
+  -->
+  <PropertyGroup>
+    <MosaPackageDependsOn>
+      MosaResolveTpkPackageFiles;
+      MosaPrePackageEvent;
+      _CheckApiVersion;
+      _MosaPrepareTpkPackage;
+      _MosaTpkSign;
+      MosaPostPackageEvent;
+    </MosaPackageDependsOn>
+  </PropertyGroup>
+
+  <!--
+  ===========================================================================
+  _UsePlatformManifestsAlways
+
+  TPK must exclude the assets provided by platform.
+  ===========================================================================
+  -->
+  <Target Name="_UsePlatformManifestsAlways" DependsOnTargets="ResolveTargetingPackAssets" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <PackageConflictPlatformManifests Include="@(PlatformManifestsFromTargetingPacks)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaPackage
+
+  The tpk sign & package entry point.
+  1. It can be triggered after Build target (ex : dotnet build)
+  2. It can be triggered by calling target (ex : dotnet msbuild /t:MosaPackage)
+  ===========================================================================
+  -->
+  <Target Name="MosaPackage"
+          Condition="'$(MosaCreateTpkOnBuild)' == 'true' And '$(TargetFramework)' != ''"
+          DependsOnTargets="$(MosaPackageDependsOn)" />
+
+  <!--
+  ===========================================================================
+  MosaClean
+
+  Delete all intermediate (Default : tpkroot) and final build outputs(*.tpk).
+  ===========================================================================
+  -->
+  <Target Name="MosaClean"
+          Condition="'$(MosaCreateTpkOnBuild)' == 'true'"
+          AfterTargets="Clean"
+          DependsOnTargets="_MosaClean;" />
+
+  <!--
+  ============================================================
+  MosaPrePackageEvent
+  ============================================================
+  -->
+  <Target Name="MosaPrePackageEvent" />
+
+  <!--
+  ============================================================
+  MosaPostPackageEvent
+  ============================================================
+  -->
+  <Target Name="MosaPostPackageEvent" />
+
+  <!--
+  ===========================================================================
+  _MosaClean
+
+  Clean MosaPackageOutputPath Direcotry (Default : tpkroot)
+  ===========================================================================
+  -->
+  <Target Name="_MosaClean">
+    <RemoveDir Directories="$(MosaPackageOutputPath)" Condition="Exists('$(MosaPackageOutputPath)')"/>
+    <ItemGroup>
+      <TpkFiles Include="$(OutDir)\*.tpk" />
+    </ItemGroup>
+    <Delete Files="@(TpkFiles)" />
+  </Target>
+
+  <!--
+  ===========================================================================
+  _MosaGetTpkInfoFromManifest
+  ===========================================================================
+  -->
+  <Target Name="_MosaGetTpkInfoFromManifest"
+          Condition="'$(WebProject)' != 'true' And '$(MosaCreateTpkOnBuild)' == 'true'">
+
+    <Error Code="TS0001"
+           File="$(MSBuildProjectFile)"
+           Text="The manifest file '$(MosaManifestFile)' was not found."
+           Condition="!Exists('$(MosaManifestFile)')"/>
+
+    <GetManifestInfo ManifestFilePath="$(MosaManifestFile)"
+                     Condition="Exists('$(MosaManifestFile)')">
+      <Output TaskParameter="PackageName" PropertyName="MosaPackageName" />
+      <Output TaskParameter="PackageVersion" PropertyName="MosaPackageVersion" />
+      <Output TaskParameter="ApiVersion" PropertyName="MosaApiVersion" />
+      <Output TaskParameter="ApplicationList" ItemName="MosaPackageApplicationList" />
+      <Output TaskParameter="FirstApplication" ItemName="MosaPackageFirstApplication" />
+    </GetManifestInfo>
+  </Target>
+
+  <!--
+  ===========================================================================
+  _CheckApiVersion
+  ===========================================================================
+  -->
+  <Target Name="_CheckApiVersion" DependsOnTargets="_MosaGetTpkInfoFromManifest">
+    <CheckApiVersion
+      ManifestApiVersion="$(MosaApiVersion)"
+      TargetFramework="$(TargetFramework)"
+      TargetFrameworkIdentifier="$(TargetFrameworkIdentifier)"
+      TargetPlatformIdentifier="$(TargetPlatformIdentifier)"
+      TargetFrameworkVersion="$(TargetFrameworkVersion)"
+      TargetPlatformVersion="$(TargetPlatformVersion)"
+      SupportedAPILevelList="@(SupportedAPILevel)"
+      >
+    </CheckApiVersion>
+  </Target>
+
+  <!--
+  ===========================================================================
+  _MosaResolveTpkPackageName
+  ===========================================================================
+  -->
+  <Target Name="_MosaResolveTpkPackageName" DependsOnTargets="_MosaGetTpkInfoFromManifest">
+    <PropertyGroup>
+      <TpkFileExt>.tpk</TpkFileExt>
+      <SignedTpkFile>$(OutputPath)$(MosaPackageName)</SignedTpkFile>
+      <SignedTpkFile>$(SignedTpkFile)-$(MosaPackageVersion)</SignedTpkFile>
+      <SignedTpkFile>$(SignedTpkFile)$(TpkFileExt)</SignedTpkFile>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaCheckExecFileExist
+  ===========================================================================
+  -->
+  <Target Name="MosaCheckExecFileExist" DependsOnTargets="_MosaGetTpkInfoFromManifest">
+    <ItemGroup>
+      <_MosaPackageExecItemList Include="%(MosaPackageApplicationList.Exec)" />
+      <_MosaPackageExecItemList Remove="%(MosaTpkAssemblyFiles.Filename)%(MosaTpkAssemblyFiles.Extension)" />
+    </ItemGroup>
+    <Message Text="$(MosaManifestFile) exec file check OK"
+             Condition="@(_MosaPackageExecItemList->Count()) == 0" />
+    <Error Code="TS0002"
+           File="$(MosaManifestFile)"
+           Text="The '%(_MosaPackageExecItemList.Identity)' file was not found.&#xA;Please check the exec attribute of $(MosaManifestFile) or check the assembly name"
+           Condition="@(_MosaPackageExecItemList->Count()) != 0" />
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaComputeTpkAssemblyFiles
+  ===========================================================================
+  -->
+  <Target Name="MosaComputeTpkAssemblyFiles" DependsOnTargets="ComputeFilesToPublish" Condition="'$(WebProject)' != 'true'">
+    <PropertyGroup>
+      <PublishDepsFile>$(OutDir)$(ProjectDepsFileName)</PublishDepsFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <!-- Copy all the assemblies -->
+      <MosaTpkAssemblyFiles Include="@(ResolvedFileToPublish)" KeepMetadata="$(TpkKeepMeta)" Condition="'%(RelativePath)' != '$(ProjectDepsFileName)'">
+        <MosaTpkSubDir>bin\</MosaTpkSubDir>
+        <MosaTpkFileName>%(RelativePath)</MosaTpkFileName>
+      </MosaTpkAssemblyFiles>
+      <!-- Copy Current Projects deps.json to tpk root folder -->
+      <MosaTpkAssemblyFiles Include="$(PublishDepsFile)" Condition="Exists('$(PublishDepsFile)')" KeepMetadata="$(TpkKeepMeta)">
+        <MosaTpkFileName>$(MSBuildProjectName).deps.json</MosaTpkFileName>
+      </MosaTpkAssemblyFiles>
+    </ItemGroup>
+    <Message Condition="!Exists('$(PublishDepsFile)')" Text="PublishDepsFile : Unable to copy $(PublishDepsFile). File does not exist." Importance="high"/>
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaComputeTpkResourceFiles
+  ===========================================================================
+  -->
+  <Target Name="MosaComputeTpkResourceFiles" Returns="@(AllTpkItemsFullPath)">
+    <!-- Get MosaProject from reference projects -->
+    <GetMosaProject ProjectFiles="@(_MSBuildProjectReferenceExistent)"
+                     Condition="'@(_MSBuildProjectReferenceExistent)' != '' and '%(_MSBuildProjectReferenceExistent.Private)' != 'false' and '$(SupportMultiAppPackage)' != 'false'">
+      <Output TaskParameter="MosaProjectFiles" ItemName="_MosaProjectFiles"/>
+    </GetMosaProject>
+
+    <!-- Get TpkFiles from reference mosa projects -->
+    <MSBuild Projects="@(_MosaProjectFiles)"
+             Condition="'@(_MosaProjectFiles)' != '' and '%(_MosaProjectFiles.Private)' != 'false'"
+             Targets="MosaComputeTpkResourceFiles"
+             BuildInParallel="$(BuildInParallel)"
+             Properties="%(_MosaProjectFiles.SetConfiguration); %(_MosaProjectFiles.SetPlatform); %(_MosaProjectFiles.SetTargetFramework)"
+             ContinueOnError="WarnAndContinue"
+             RemoveProperties="%(_MosaProjectFiles.GlobalPropertiesToRemove)">
+
+      <Output TaskParameter="TargetOutputs" ItemName="_AllTpkItemsFullPath"/>
+    </MSBuild>
+
+    <!-- Target outputs must be full paths because they will be consumed by a different project. -->
+    <ItemGroup>
+      <MosaTpkFiles KeepDuplicates="false"
+                     KeepMetadata="$(TpkKeepMeta)"
+                     Include="@(_AllTpkItemsFullPath->'%(FullPath)')" />
+      <MosaTpkFiles Update="@(MosaTpkFiles)"
+                     Condition=" '%(MosaTpkFiles.MosaTpkIsManifest)' == 'true' " >
+        <MosaTpkIsBaseManifest>false</MosaTpkIsBaseManifest><!-- reference manifest should not be MosaTpkIsBaseManifest -->
+      </MosaTpkFiles>
+    </ItemGroup>
+
+    <!-- Remove items which we will never again use - they just sit around taking up memory otherwise -->
+    <ItemGroup>
+      <_AllTpkItemsFullPath Remove="@(_AllTpkItemsFullPath)"/>
+      <_MosaProjectFiles Remove ="@(_MosaProjectFiles)" />
+    </ItemGroup>
+
+    <!-- Default Resource File Include from Project -->
+    <ItemGroup>
+      <MosaTpkFiles Include="@(MosaLibrary)" Condition="Exists('%(MosaLibrary.Identity)')">
+        <MosaTpkSubDir>lib\%(MosaLibrary.RecursiveDir)</MosaTpkSubDir>
+        <MosaTpkFileName>%(Filename)%(Extension)</MosaTpkFileName>
+      </MosaTpkFiles>
+      <MosaTpkFiles Include="$(MosaManifestFile)" Condition="Exists('$(MosaManifestFile)')">
+        <MosaTpkFileName>%(Filename)%(Extension)</MosaTpkFileName>
+        <MosaTpkIsManifest>true</MosaTpkIsManifest>
+        <MosaTpkIsBaseManifest>true</MosaTpkIsBaseManifest>
+      </MosaTpkFiles>
+    </ItemGroup>
+
+    <!-- Include Files -->
+    <ItemGroup>
+      <MosaTpkFiles Include="@(MosaResource)" Condition="Exists('%(MosaResource.Identity)')">
+        <MosaTpkSubDir>res\%(MosaResource.RecursiveDir)</MosaTpkSubDir>
+        <MosaTpkFileName Condition="'%(MosaResource.MosaTpkFileName)' == ''">%(Filename)%(Extension)</MosaTpkFileName>
+      </MosaTpkFiles>
+      <MosaTpkFiles Include="@(MosaSharedResource)" Condition="Exists('%(MosaSharedResource.Identity)')">
+        <MosaTpkSubDir>shared\%(MosaSharedResource.RecursiveDir)</MosaTpkSubDir>
+        <MosaTpkFileName>%(Filename)%(Extension)</MosaTpkFileName>
+      </MosaTpkFiles>
+      <MosaTpkFiles Include="@(MosaTpkUserIncludeFiles)" Exclude="@(MosaTpkUserExcludeFiles)">
+        <MosaTpkSubDir Condition="'%(MosaTpkUserIncludeFiles.MosaTpkSubDir)' == ''">%(MosaTpkUserIncludeFiles.RelativeDir)</MosaTpkSubDir>
+        <MosaTpkFileName Condition="'%(MosaTpkUserIncludeFiles.MosaTpkFileName)' == ''">%(Filename)%(Extension)</MosaTpkFileName>
+      </MosaTpkFiles>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!--
+      First, add a trailing slash to the MosaTpkSubDir metadata if necessary.
+      This allows us to use the same value for the MosaTpkSubPath metadata whether or not MosaTpkSubDir metadata is set:
+      %(MosaTpkFiles.MosaTpkSubDir)%(MosaTpkFiles.MosaTpkFileName)
+      Note that RecursiveDir already includes the trailing slash.
+      -->
+      <MosaTpkFiles Update="@(MosaTpkFiles)">
+        <MosaTpkSubDir Condition="'%(MosaTpkFiles.MosaTpkSubDir)' != ''">$([MSBuild]::EnsureTrailingSlash(%(MosaTpkFiles.MosaTpkSubDir)))</MosaTpkSubDir>
+        <!-- If path contain '..\' without MosaTpkSubDir then MosaTpkSubDir will be set '' -->
+        <MosaTpkSubDir Condition="'%(MosaTpkFiles.MosaTpkSubDir)' != '' and $([System.String]::new('%(MosaTpkFiles.MosaTpkSubDir)').Contains('..\'))"></MosaTpkSubDir>
+      </MosaTpkFiles>
+    </ItemGroup>
+
+    <!-- Item to Return  -->
+    <ItemGroup>
+      <AllTpkItemsFullPath Include="@(MosaTpkFiles->'%(FullPath)')"/>
+    </ItemGroup>
+
+    <!-- <Message Text="MosaTpkFiles : %(MosaTpkFiles.Identity)" Importance="high"/> -->
+  </Target>
+
+  <!--
+  ===========================================================================
+  ClearReferenceCopyLocalPaths if SupportMultiAppPackage is set to false in csproj
+  ===========================================================================
+  -->
+  <Target Name="ClearReferenceCopyLocalPaths" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'$(SupportMultiAppPackage)' == 'false'"/>
+    </ItemGroup>
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaComputeTpkPackageFiles
+  ===========================================================================
+  -->
+  <Target Name="MosaComputeTpkPackageFiles" DependsOnTargets="ClearReferenceCopyLocalPaths;_MosaGenerateResourceXmlFile;MosaComputeTpkAssemblyFiles;MosaComputeTpkResourceFiles">
+    <ItemGroup>
+      <!-- Add AssemblyFiles -->
+      <MosaResolvedFileToTpk Include="@(MosaTpkAssemblyFiles)" KeepMetadata="$(TpkKeepMeta)">
+        <MosaTpkSubPath>%(MosaTpkAssemblyFiles.MosaTpkSubDir)%(MosaTpkAssemblyFiles.MosaTpkFileName)</MosaTpkSubPath>
+      </MosaResolvedFileToTpk>
+      <!-- Add ResourceFiles -->
+      <MosaResolvedFileToTpk Include="@(MosaTpkFiles)" KeepMetadata="$(TpkKeepMeta)">
+        <MosaTpkSubPath>%(MosaTpkFiles.MosaTpkSubDir)%(MosaTpkFiles.MosaTpkFileName)</MosaTpkSubPath>
+      </MosaResolvedFileToTpk>
+    </ItemGroup>
+    <Message Text='Added "%(MosaResolvedFileToTpk.Identity)" to TPK' Condition ="'@(MosaResolvedFileToTpk)' != '' "/>
+  </Target>
+
+  <!--
+  ===========================================================================
+  _MosaExcludeTpkFiles
+  ===========================================================================
+  -->
+  <Target Name="_MosaExcludeTpkFiles">
+    <!-- Exclude MosaTpkUserExcludeFiles -->
+    <PropertyGroup>
+      <_MosaTpkUserExcludeFiles>;@(MosaTpkUserExcludeFiles);</_MosaTpkUserExcludeFiles>
+    </PropertyGroup>
+    <ItemGroup>
+      <_MosaTpkUserExcludeFilesToRemove Include="@(MosaResolvedFileToTpk)" Condition=" $(_MosaTpkUserExcludeFiles.Contains('%(MosaResolvedFileToTpk.Filename)%(MosaResolvedFileToTpk.Extension)'))" />
+      <MosaResolvedFileToTpk Remove="@(_MosaTpkUserExcludeFilesToRemove)" />
+    </ItemGroup>
+
+    <!-- Exclude MosaTpkExcludePattern -->
+    <FindPatternInList Condition="'$(MosaTpkExcludePattern)' != ''" List="@(MosaResolvedFileToTpk)" Patterns="$(MosaTpkExcludePattern)">
+      <Output TaskParameter="MatchList" ItemName="_MosaTpkPatternExcludeFilesToRemove" />
+    </FindPatternInList>
+    <FindPatternInList Condition="'$(MosaTpkExcludePattern)' != '' and '$(MosaTpkNotExcludePattern)' != ''"
+                       List="@(_MosaTpkPatternExcludeFilesToRemove)" Patterns="$(MosaTpkNotExcludePattern)">
+      <Output TaskParameter="MatchList" ItemName="_MosaTpkPatternExcludeFilesToKeep" />
+    </FindPatternInList>
+    <ItemGroup>
+      <_MosaTpkPatternExcludeFilesToRemove Remove="@(_MosaTpkPatternExcludeFilesToKeep)"/>
+      <MosaResolvedFileToTpk Remove="@(_MosaTpkPatternExcludeFilesToRemove)" />
+    </ItemGroup>
+
+    <!-- Exclude Unused Runtime Assets -->
+    <ItemGroup>
+      <MosaResolvedFileToTpk Remove="@(MosaResolvedFileToTpk)"
+                              Condition="$([System.String]::Copy('%(MosaTpkSubPath)').StartsWith('bin\runtimes\win'))" />
+      <MosaResolvedFileToTpk Remove="@(MosaResolvedFileToTpk)"
+                              Condition="$([System.String]::Copy('%(MosaTpkSubPath)').StartsWith('bin\runtimes\osx'))" />
+    </ItemGroup>
+  </Target>
+
+
+  <!--
+  ===========================================================================
+  MosaResolveTpkPackageFiles
+  ===========================================================================
+  -->
+  <Target Name="MosaResolveTpkPackageFiles"
+          DependsOnTargets="MosaComputeTpkPackageFiles;_MosaExcludeTpkFiles">
+    <Message Text='From : "%(MosaResolvedFileToTpk.Identity)"&#xA;  To : "%(MosaResolvedFileToTpk.MosaTpkSubPath)"'
+             Condition ="'@(MosaResolvedFileToTpk)' != '' "/>
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaIncrementalClean
+  ===========================================================================
+  -->
+  <Target Name="MosaIncrementalClean" AfterTargets="IncrementalClean"
+          DependsOnTargets="_MosaResolveTpkPackageName;MosaResolveTpkPackageFiles">
+    <ReadLinesFromFile File="$(IntermediateOutputPath)Mosa$(CleanFile)">
+      <Output TaskParameter="Lines" ItemName="_MosaCleanUnfilteredPriorFileWrites" />
+    </ReadLinesFromFile>
+    <RemoveDuplicates Inputs="@(_MosaCleanUnfilteredPriorFileWrites)">
+      <Output TaskParameter="Filtered" ItemName="_MosaCleanUnfilteredPriorFileWritesNoDup" />
+    </RemoveDuplicates>
+    <ConvertToAbsolutePath Paths="@(MosaResolvedFileToTpk->'$(MosaPackageOutputPath)%(MosaTpkSubPath)')">
+      <Output TaskParameter="AbsolutePaths" ItemName="_ResolveMosaResolvedFilekFileWritesAbs" />
+    </ConvertToAbsolutePath>
+    <ConvertToAbsolutePath Paths="$(SignedTpkFile)">
+      <Output TaskParameter="AbsolutePaths" ItemName="_ResolveMosaResolvedFilekFileWritesAbs" />
+    </ConvertToAbsolutePath>
+    <ItemGroup>
+      <_MosaCleanPriorFileWrites Include="@(_MosaCleanUnfilteredPriorFileWritesNoDup)" Exclude="@(_ResolveMosaResolvedFilekFileWritesAbs)" />
+    </ItemGroup>
+
+    <!-- If there are some exclude files on TPK file, then it should be delete tpks to repackaging -->
+    <Delete Files="$(SignedTpkFile)"
+            TreatErrorsAsWarnings="true"
+            Condition="'@(_MosaCleanPriorFileWrites->Count())' &gt; 0">
+    </Delete>
+    <Delete Files="@(_MosaCleanPriorFileWrites)"
+            TreatErrorsAsWarnings="true">
+      <Output TaskParameter="DeletedFiles" ItemName="__MosaCleanPriorFileWritesDeleted" />
+    </Delete>
+    <WriteLinesToFile File="$(IntermediateOutputPath)Mosa$(CleanFile)"
+                      Lines="@(_ResolveMosaResolvedFilekFileWritesAbs)"
+                      Overwrite="true" />
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaCreateTpkDirectoryStructure
+  ===========================================================================
+  -->
+  <Target Name="MosaCreateTpkDirectoryStructure">
+    <MakeDir Directories = "$(MosaPackageOutputPath)" Condition = "!Exists('$(MosaPackageOutputPath)')" />
+    <MakeDir Directories = "$(MosaPackageOutputPath)bin" Condition = "!Exists('$(MosaPackageOutputPath)bin')" />
+    <MakeDir Directories = "$(MosaPackageOutputPath)lib" Condition = "!Exists('$(MosaPackageOutputPath)lib')" />
+    <MakeDir Directories = "$(MosaPackageOutputPath)res" Condition = "!Exists('$(MosaPackageOutputPath)res')" />
+    <MakeDir Directories = "$(MosaPackageOutputPath)shared" Condition = "!Exists('$(MosaPackageOutputPath)shared')" />
+    <MakeDir Directories = "$(MosaPackageOutputPath)shared\res" Condition = "!Exists('$(MosaPackageOutputPath)shared\res')" />
+  </Target>
+
+  <!--
+  ===========================================================================
+  _MosaGenerateResourceXmlFile
+  ===========================================================================
+  -->
+  <Target Name="_MosaGenerateResourceXmlFile">
+    <ResourceXmlWriter
+                   ProjectFullName="$(MSBuildProjectDirectory)"
+                   LangCountryListXmlPath="$(MSBuildThisFileDirectory)..\tools\">
+      <Output TaskParameter="ResourceXmlPath" PropertyName="_MosaResourceXmlPath" />
+    </ResourceXmlWriter>
+    <ItemGroup>
+      <MosaResource Include="$(_MosaResourceXmlPath)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaManifestMergeAndCopy
+  ===========================================================================
+  -->
+  <Target Name="MosaManifestMergeAndCopy">
+    <ItemGroup>
+      <BaseManifest Include="@(MosaResolvedFileToTpk)"
+                    Condition="'%(MosaResolvedFileToTpk.MosaTpkIsManifest)' == 'true' and '%(MosaResolvedFileToTpk.MosaTpkIsBaseManifest)' == 'true'"/>
+
+      <SubManifest Include="@(MosaResolvedFileToTpk)"
+                   Condition="'%(MosaResolvedFileToTpk.MosaTpkIsManifest)' == 'true' and '%(MosaResolvedFileToTpk.MosaTpkIsBaseManifest)' != 'true'"/>
+    </ItemGroup>
+
+    <!-- If manifest file is multiple, merge manifest -->
+    <MergeManifest Condition="@(SubManifest->Count()) > 0"
+                   MainManifestFile="%(BaseManifest.Identity)"
+                   SubManifestFileList="@(SubManifest)"
+                   ResultManifestFile="$(MosaPackageOutputPath)mosa-manifest.xml"/>
+
+    <!-- If manifest file count is only one, copy manifest -->
+    <Copy SourceFiles="@(MosaResolvedFileToTpk)"
+          DestinationFiles="@(MosaResolvedFileToTpk->'$(MosaPackageOutputPath)mosa-manifest.xml')"
+          Condition="@(SubManifest->Count()) == 0 and '%(MosaResolvedFileToTpk.MosaTpkIsManifest)' == 'true' "
+          OverwriteReadOnlyFiles="true"
+          Retries="10">
+      <Output TaskParameter="DestinationFiles" ItemName="TpkFileWrites" />
+    </Copy>
+  </Target>
+
+  <!--
+  ===========================================================================
+  _MosaPrepareTpkPackage
+
+  1. Publish Assembly to PublishDir
+  2. Copy bin/res/lib/shared resource to MosaPackageOutputPath (Default : tpkroot)
+  3. Remove tpk files
+  ===========================================================================
+  -->
+  <Target Name="_MosaPrepareTpkPackage"
+          DependsOnTargets="_MosaResolveTpkPackageName;
+                            MosaResolveTpkPackageFiles;
+                            MosaCreateTpkDirectoryStructure;
+                            MosaManifestMergeAndCopy"
+          Inputs="@(MosaResolvedFileToTpk)"
+          Outputs="@(MosaResolvedFileToTpk->'$(MosaPackageOutputPath)%(MosaTpkSubPath)')">
+    <!--<Copy SourceFiles="@(MosaResolvedFileToTpk)"
+          DestinationFiles="@(MosaResolvedFileToTpk->'$(MosaPackageOutputPath)%(MosaTpkSubPath)')"
+          Condition="'%(MosaResolvedFileToTpk.MosaTpkIsManifest)' != 'true' "
+          OverwriteReadOnlyFiles="true"
+          Retries="10">
+      <Output TaskParameter="DestinationFiles" ItemName="TpkFileWrites" />
+    </Copy>
+
+    <Delete Files="$(SignedTpkFile)" TreatErrorsAsWarnings="true" />-->
+  </Target>
+
+  <!--
+  ===========================================================================
+  _MosaTpkSign
+
+  Sign unsigned TPK
+  ===========================================================================
+  -->
+  <Target Name="_MosaTpkSign"
+          DependsOnTargets="_MosaResolveTpkPackageName;
+                            _MosaPrepareTpkPackage;
+                            MosaPrepareCertificate;
+                            MosaCheckCertificateChanged"
+          Inputs="@(MosaResolvedFileToTpk->'$(MosaPackageOutputPath)%(MosaTpkSubPath)');$(IntermediateOutputPath)MosaAuthorTimeStamp;$(IntermediateOutputPath)MosaDistributorTimeStamp"
+          Outputs="$(SignedTpkFile)"
+          Condition="'$(WebProject)' != 'true'">
+
+    <!--<CallTarget Targets="MosaCheckExecFileExist" />
+
+    <Error Condition="!Exists('$(AuthorPath)') OR !Exists('$(DistributorPath)')"
+           Text="Invalid Tpk Signing resource ... Please check the Properties &#60;AuthorPath&#62; &#61; $(AuthorPath), &#60;DistributorPath&#62; &#61; $(DistributorPath)"/>-->
+
+    <!--<Sign RootDir="$(MosaPackageOutputPath)"
+          AuthorFile="$(AuthorPath)"
+          AuthorPassword="$(AuthorPass)"
+          DistFile="$(DistributorPath)"
+          DistPassword="$(DistributorPass)"
+          DistFile2="$(DistributorPath2)"
+          DistPassword2="$(DistributorPass2)"
+          OutputSignedTpk="$(SignedTpkFile)" />-->
+
+    <!--<Message Text="Successfully created tpk package : $(SignedTpkFile)" Condition="Exists('$(SignedTpkFile)')"/>
+    <Error Text="Failed to create tpk package : $(SignedTpkFile)" Importance="high" Condition="!Exists('$(SignedTpkFile)')"/>-->
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaPrintTpkOutput
+
+  Show message of tpk full path
+  ===========================================================================
+  -->
+  <Target Name="MosaPrintTpkOutput" AfterTargets="_MosaTpkSign">
+    <!--<Message Condition="Exists('$(SignedTpkFile)')"
+             Importance="high"
+             Text="$(MSBuildProjectName) -> $([System.IO.Path]::GetFullPath('$(SignedTpkFile)'))" />-->
+  </Target>
+
+  <!--
+  ===========================================================================
+  MosaPrepareCertificate
+
+  Check Certificate properties & set default certificates
+  ===========================================================================
+  -->
+  <Target Name="MosaPrepareCertificate">
+    <!--<PropertyGroup>
+      <MosaDefaultAuthorPath>$(MSBuildThisFileDirectory)..\certificate\author_test.p12</MosaDefaultAuthorPath>
+      <MosaDefaultAuthorPass>author_test</MosaDefaultAuthorPass>
+      <MosaDefaultDistributorPath>$(MSBuildThisFileDirectory)..\certificate\mosa-distributor-signer.p12</MosaDefaultDistributorPath>
+      <MosaDefaultDistributorPass>mosapkcs12passfordsigner</MosaDefaultDistributorPass>
+    </PropertyGroup>
+
+    <Message Condition="'$(AuthorPath)'==''"
+             Importance="normal"
+             Text="AuthorPath property is not set!" />
+
+    <PropertyGroup Condition="'$(AuthorPath)'==''">
+      <AuthorPath>$(MosaDefaultAuthorPath)</AuthorPath>
+      <AuthorPass>$(MosaDefaultAuthorPass)</AuthorPass>
+      <MosaUseDefaultCertificate>true</MosaUseDefaultCertificate>
+    </PropertyGroup>
+
+    <Message Condition="'$(DistributorPath)'==''"
+             Importance="normal"
+             Text="DistributorPath property is not set!" />
+
+    <PropertyGroup Condition="'$(DistributorPath)'==''">
+      <DistributorPath>$(MosaDefaultDistributorPath)</DistributorPath>
+      <DistributorPass>$(MosaDefaultDistributorPass)</DistributorPass>
+      <MosaUseDefaultCertificate>true</MosaUseDefaultCertificate>
+    </PropertyGroup>
+
+    <Message Condition="'$(MosaUseDefaultCertificate)'=='true'"
+             Importance="high"
+             Text="$(MSBuildProjectName) is signed with Default Certificates!" />
+
+    --><!--check author file exist --><!--
+    <Error Code="TS0003"
+           File="$(MSBuildProjectFile)"
+           Text="The author certificate file '$(AuthorPath)' was not found."
+           Condition="!Exists('$(AuthorPath)')" />
+
+    --><!--check distributor file exist --><!--
+    <Error Code="TS0004"
+           File="$(MSBuildProjectFile)"
+           Text="The distributor certificate file '$(DistributorPath)' was not found."
+           Condition="!Exists('$(DistributorPath)')" />-->
+
+  </Target>
+
+
+  <!--
+  ===========================================================================
+  MosaCheckCertificateChanged
+
+  Check if the certificate was updated and create tpk if certificate was changed.
+  ===========================================================================
+  -->
+  <Target Name="MosaCheckCertificateChanged">
+    <!-- Check the Author Certificate Info changed & Save Info -->
+    <!--<ReadLinesFromFile File="$(IntermediateOutputPath)MosaAuthorTimeStamp">
+      <Output TaskParameter="Lines" ItemName="SignedAuthorHash" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <SignedAuthorHash>@(SignedAuthorHash)</SignedAuthorHash>
+      <AuthorHash>$(AuthorPath)_$([System.IO.File]::GetLastWriteTime($(AuthorPath)).Ticks)</AuthorHash>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(SignedAuthorHash)' != '$(AuthorHash)'"
+                      File="$(IntermediateOutputPath)MosaAuthorTimeStamp"
+                      Lines="$(AuthorHash)"
+                      Overwrite="true" />
+
+    --><!-- Check the Distributor Certificate Info changed & Save Info --><!--
+    <ReadLinesFromFile File="$(IntermediateOutputPath)MosaDistributorTimeStamp">
+      <Output TaskParameter="Lines" ItemName="SignedDistributorHash" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <SignedDistributorHash>@(SignedDistributorHash)</SignedDistributorHash>
+      <DistributorHash>$(DistributorPath)_$([System.IO.File]::GetLastWriteTime($(DistributorPath)).Ticks)</DistributorHash>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(SignedDistributorHash)' != '$(DistributorHash)'"
+                      File="$(IntermediateOutputPath)MosaDistributorTimeStamp"
+                      Lines="$(DistributorHash)"
+                      Overwrite="true" />-->
+  </Target>
+
+</Project>

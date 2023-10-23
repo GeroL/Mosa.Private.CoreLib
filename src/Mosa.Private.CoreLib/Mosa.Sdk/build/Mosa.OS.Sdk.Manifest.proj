@@ -1,0 +1,46 @@
+<!--
+***********************************************************************************************
+Mosa.NET.Sdk.Mosa.proj
+
+This project file is used to create the Mosa.NET.Sdk.Mosa NuGet, which is the
+workload manifest pack containing information about the Mosa .NET workload.
+***********************************************************************************************
+-->
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <!-- Trim all characters after first `-` or `+` is encountered. -->
+    <DotNetPreviewVersionBand Condition=" '$(DotNetPreviewVersionBand)' == '' ">$([System.Text.RegularExpressions.Regex]::Replace($(MicrosoftDotnetSdkInternalPackageVersion), `[-+].*$`, ""))</DotNetPreviewVersionBand>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Mosa.Sdk.Manifest-$(DotNetPreviewVersionBand)</PackageId>
+    <Description>Mosa .NET workload manifest. Please do not reference directly.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BeforePack>
+      _GenerateWorkloadContent;
+      $(BeforePack);
+    </BeforePack>
+  </PropertyGroup>
+
+  <Target Name="_GenerateWorkloadContent" DependsOnTargets="_GetPackageVersion;_GetLicense">
+    <PropertyGroup>
+      <WorkloadManifestJsonPath>$(OutputPath)workload-manifest\WorkloadManifest.json</WorkloadManifestJsonPath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName ($(WorkloadManifestJsonPath)))" />
+    <ReplaceFileContents
+        SourceFile="$(_ProjectSourceDirectory)Mosa.Sdk.Manifest\WorkloadManifest.in.json"
+        DestinationFile="$(WorkloadManifestJsonPath)"
+        Replacements="@MOSA_WORKLOAD_VERSION@=$(MosaPackVersion);">
+    </ReplaceFileContents>
+
+    <ItemGroup>
+      <_PackageFiles Include="$(_ProjectSourceDirectory)Mosa.Sdk.Manifest\WorkloadManifest.targets" PackagePath="data" />
+      <_PackageFiles Include="$(WorkloadManifestJsonPath)" PackagePath="data" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="Sdk.targets" Sdk="Mosa.Sdk" Condition="'$(TargetPlatformIdentifier)' == 'mosa'" />
+
+  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '6.0')) ">
+    <SdkSupportedTargetPlatformIdentifier Include="mosa" DisplayName="Mosa" />
+  </ItemGroup>
+</Project>
