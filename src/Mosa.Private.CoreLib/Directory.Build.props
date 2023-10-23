@@ -1,7 +1,7 @@
 <Project>
-  <!--<Import Project="Sdk.targets" Sdk="Mosa.Os.Sdk" Condition="'$(TargetPlatformIdentifier)' == 'mosa'" />-->
+  <!--<Import Project="Sdk.targets" Sdk="Mosa.Sdk" Condition="'$(TargetPlatformIdentifier)' == 'mosa'" />-->
   
-  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '6.0')) ">
+  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '8.0')) ">
     <SdkSupportedTargetPlatformIdentifier Include="mosa" DisplayName="Mosa" />
   </ItemGroup>
 

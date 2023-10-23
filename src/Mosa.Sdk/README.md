@@ -1,6 +1,6 @@
 # Workload for Mosa .NET
 
-This is a build of Mosa workload for Mosa in .NET 6.
+This is a build of Mosa workload for Mosa in .NET 8.
 Please refer [.NET 6.0.0 Mobile Samples](https://github.com/dotnet/net6-mobile-samples#net-600-mobile-samples) for installing .NET 6 SDK and other workloads of different plattforms.
      
 ## Using IDEs

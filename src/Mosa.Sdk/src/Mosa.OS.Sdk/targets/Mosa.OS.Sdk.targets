@@ -28,6 +28,17 @@ Copyright (c) Samsung All rights reserved.
     />
   </ItemGroup>
 
+  <PropertyGroup>
+    <RemoveSDKReferences>
+      mscorlib;
+      WindowsBase;
+      System.Private.CoreLib;
+    </RemoveSDKReferences>
+    <IncludeSDKReferences>
+      Mosa.Private.CoreLib;
+    </IncludeSDKReferences>
+  </PropertyGroup>
+  
   <ItemGroup>
     <FrameworkReference Update="Microsoft.NETCore.App" RuntimePackLabels="Mosa" />
     <KnownRuntimePack Remove="Microsoft.NETCore.App" />
@@ -39,6 +50,10 @@ Copyright (c) Samsung All rights reserved.
                       RuntimePackRuntimeIdentifiers="mosa;mosa-arm;mosa-x86;mosa-x64"
                       RuntimePackLabels="Mosa"
                       />
+    <NetFxReference Remove="$(RemoveSDKReferences)" />
+    <NetCoreAppLibrary Remove="$(RemoveSDKReferences)" />
+
+    <NetFxReference Include="$(IncludeSDKReferences)" />
   </ItemGroup>
 
 </Project>
